@@ -1,0 +1,13 @@
+# 学習データ（公開データセット由来。研究用途配布のため再配布しない。
+# 再取得・再生成は tools/fetch_data.sh と docs/data-pipeline.md を参照）
+tools/data/
+
+# Python
+__pycache__/
+*.pyc
+
+# ローカル環境・エディタ
+.claude/
+node_modules/
+.DS_Store
+Thumbs.db

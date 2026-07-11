@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Piano Studio — Keyboard Piano & Chord Trainer</title>
+  <link rel="preconnect" href="https://tonejs.github.io" />
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <!-- 上部アプリバー：ブランド＋モードタブ -->
+  <header class="app-bar">
+    <div class="brand">
+      <span class="brand-logo">🎹</span>
+      <div class="brand-text">
+        <h1>Piano Studio <span>Chord Trainer</span></h1>
+        <p class="subtitle">PCキーボードでピアノを弾いて、コードを学ぼう</p>
+      </div>
+    </div>
+    <nav class="mode-tabs" id="mode-tabs">
+      <button class="tab active" data-mode="free">🎵 自由演奏</button>
+      <button class="tab" data-mode="learn">📚 コード学習</button>
+      <button class="tab" data-mode="compose">🤖 AI作曲</button>
+      <button class="tab" data-mode="editor">📝 楽譜エディタ</button>
+    </nav>
+  </header>
+
+  <main class="stage">
+    <!-- 自由演奏 -->
+    <section class="panel active" id="panel-free">
+      <div class="free-display">
+        <div class="np-block">
+          <span class="np-label">押している音</span>
+          <span class="np-value" id="free-notes">—</span>
+        </div>
+        <div class="np-block accent">
+          <span class="np-label">推定コード</span>
+          <span class="np-value" id="free-chord">—</span>
+        </div>
+      </div>
+      <p class="hint">
+        下の鍵盤に表示されたPCキー（A・S・D… / 黒鍵は W・E…）を押すと音が鳴ります。
+        「キー（左端の音）」で調を、オクターブで音域を変えられます。
+      </p>
+
+      <!-- 参考楽譜：AI作曲・楽譜エディタで保存した曲を表示して、見ながら演奏できる -->
+      <div class="free-score">
+        <div class="fs-head">
+          <span class="fs-title">🎼 参考楽譜</span>
+          <div class="fs-controls">
+            <select id="fs-song"><option value="">（楽譜を選ぶ）</option></select>
+            <button class="btn ghost" id="fs-play">▶ 再生</button>
+            <button class="btn ghost" id="fs-stop">■ 停止</button>
+          </div>
+        </div>
+        <div class="visual-wrap" id="fs-staff" hidden></div>
+        <p class="hint">AI作曲から取り込んだ曲や、楽譜エディタで作った楽譜をここに表示して、見ながら演奏できます。再生すると楽譜と鍵盤がハイライトされます。</p>
+      </div>
+    </section>
+
+    <!-- コード学習（カリキュラム：スライド形式） -->
+    <section class="panel" id="panel-learn">
+      <div class="learn-layout">
+        <aside class="lesson-rail card hover-rail">
+          <div class="rail-handle" aria-hidden="true"><span>📚</span><span class="rail-handle-text">カリキュラム</span></div>
+          <div class="rail-panel">
+            <div class="rail-head">
+              <span class="rail-title">カリキュラム</span>
+              <div class="rail-progress">
+                <div class="rail-progress-bar"><div class="rail-progress-fill" id="learn-progress-fill"></div></div>
+                <span class="rail-progress-text" id="learn-progress-text">0 / 0</span>
+              </div>
+            </div>
+            <div class="lesson-list" id="lesson-list"></div>
+          </div>
+        </aside>
+
+        <div class="lesson-main card">
+          <div class="slide-head">
+            <div>
+              <span class="slide-topic" id="slide-topic">—</span>
+              <h2 class="lesson-title" id="lesson-title">—</h2>
+            </div>
+            <span class="slide-counter" id="slide-counter">1 / 1</span>
+          </div>
+
+          <div class="slide-body" id="slide-body"></div>
+
+          <div class="slide-nav">
+            <div class="nav-left">
+              <button class="btn ghost" id="slide-prev">← 前へ</button>
+              <div class="slide-actions" id="slide-actions"></div>
+            </div>
+            <div class="slide-dots" id="slide-dots"></div>
+            <button class="btn" id="slide-next">次へ →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI作曲 -->
+    <section class="panel" id="panel-compose">
+      <div class="card cmp-card">
+        <p class="cmp-lead">🤖 学習済みAIが曲を丸ごと生成します。コード進行・メロディはともに Transformer（和声リズム・分数コード・モチーフ反復まで学習、曲の長さも可変）。長調/短調は曲ごとに変わり、サビ/Aメロを推定して伴奏の厚みを変化、<b>強弱は実演奏データから学習した曲線</b>で「どこを盛り上げるか」が曲ごとに決まります。終止のしかたやリタルダンドも固定ルールではなく曲の文脈に追従。楽譜にも強弱記号（p〜f）・松葉（クレシェンド）・スラー・rit. を表示します。</p>
+        <div class="cmp-controls">
+          <label class="field"><span>キー</span><select id="cmp-key"></select></label>
+          <label class="field"><span>伴奏</span><select id="cmp-accomp"></select></label>
+          <label class="field"><span>テンポ <b id="cmp-bpm-label">110</b></span><input type="range" id="cmp-tempo" min="50" max="200" value="110" step="1"></label>
+          <button class="btn" id="cmp-generate">🎲 生成する</button>
+          <button class="btn ghost" id="cmp-play">▶ 再生</button>
+          <button class="btn ghost" id="cmp-stop">■ 停止</button>
+          <button class="btn ghost" id="cmp-to-editor">📝 エディタで編集</button>
+        </div>
+        <div class="cmp-chips" id="cmp-chords"></div>
+        <div class="visual-wrap" id="cmp-staff"></div>
+        <p class="hint" id="cmp-info">「生成する」を押すと、コード進行・メロディ・伴奏・強弱まで自動で作ります。生成すると調（長調/短調）と曲の構造（A B A…）もここに表示されます。「📝 エディタで編集」で生成曲を楽譜エディタに取り込み、自由に手直しできます。</p>
+      </div>
+    </section>
+
+    <!-- 楽譜エディタ -->
+    <section class="panel" id="panel-editor">
+      <div class="ed-layout">
+        <!-- 左：楽譜ライブラリ（ホバーで展開。削除は各行の🗑、直後なら復元可能） -->
+        <aside class="ed-rail card hover-rail">
+          <div class="rail-handle" aria-hidden="true"><span>🎼</span><span class="rail-handle-text">楽譜ライブラリ</span></div>
+          <div class="rail-panel">
+            <div class="rail-head ed-rail-head">
+              <span class="rail-title">楽譜ライブラリ</span>
+              <button class="btn ghost ed-new-btn" id="ed-new">＋ 新規</button>
+            </div>
+            <div class="ed-song-list" id="ed-song-list"></div>
+            <div class="ed-restore" id="ed-restore" hidden>
+              <span id="ed-restore-label">削除しました</span>
+              <button class="btn ghost" id="ed-restore-btn">元に戻す</button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 右：エディタ本体 -->
+        <div class="card ed-card">
+          <div class="ed-toolbar ed-song-row">
+            <label class="field ed-grow"><span>タイトル</span><input type="text" id="ed-title" maxlength="48" placeholder="無題の楽譜"></label>
+            <label class="field"><span>キー</span><select id="ed-key"></select></label>
+            <label class="field"><span>テンポ <b id="ed-bpm-label">110</b></span><input type="range" id="ed-bpm" min="50" max="200" value="110" step="1"></label>
+            <div class="ed-transport">
+              <button class="btn" id="ed-play" title="再生 (Space)">▶ 再生</button>
+              <button class="btn ghost" id="ed-stop" title="停止 (Space / Esc)">■ 停止</button>
+            </div>
+          </div>
+          <div class="ed-toolbar ed-edit-row">
+            <div class="ed-group">
+              <span class="ed-label">入力先</span>
+              <div class="seg" id="ed-track">
+                <button class="seg-btn active" data-track="treble">🎵 メロディ</button>
+                <button class="seg-btn" data-track="bass">🎹 伴奏</button>
+              </div>
+            </div>
+            <div class="ed-group">
+              <span class="ed-label">音価</span>
+              <div class="seg" id="ed-durs"></div>
+            </div>
+            <div class="ed-group">
+              <span class="ed-label">音符</span>
+              <div class="seg">
+                <button class="seg-btn" id="ed-add" title="選択の後ろに音符を追加">♪ 追加</button>
+                <button class="seg-btn" id="ed-rest" title="選択の後ろに休符を追加">𝄽 休符</button>
+                <button class="seg-btn" id="ed-del" title="選択した音符を削除 (Delete)">🗑 削除</button>
+              </div>
+            </div>
+            <div class="ed-group">
+              <span class="ed-label">音高</span>
+              <div class="seg">
+                <button class="seg-btn" id="ed-down" title="半音下げる (↓)">♭</button>
+                <button class="seg-btn" id="ed-up" title="半音上げる (↑)">♯</button>
+                <button class="seg-btn" id="ed-octdown" title="1オクターブ下げる (Shift+↓)">−8va</button>
+                <button class="seg-btn" id="ed-octup" title="1オクターブ上げる (Shift+↑)">＋8va</button>
+              </div>
+            </div>
+            <div class="ed-group">
+              <span class="ed-label">履歴</span>
+              <div class="seg">
+                <button class="seg-btn" id="ed-undo" title="元に戻す (Ctrl+Z)" disabled>↶</button>
+                <button class="seg-btn" id="ed-redo" title="やり直す (Ctrl+Y / Ctrl+Shift+Z)" disabled>↷</button>
+              </div>
+            </div>
+            <label class="ed-check"><input type="checkbox" id="ed-input" checked> 🎹 鍵盤で音符入力</label>
+          </div>
+          <div class="visual-wrap" id="ed-staff"></div>
+          <p class="hint" id="ed-status">—</p>
+          <p class="hint">左の一覧から楽譜を選んで編集します（名前はタイトル欄でそのまま変更。各行の 🗑 で削除、直後なら「元に戻す」で復元できます。空のままの「無題の楽譜」は自動で片付きます）。音符をクリックして選択 → 音価・音高・🗑 で編集。ショートカット: ← → 選択移動 ／ ↑ ↓ 半音（Shift+↑↓ でオクターブ）／ Delete 削除 ／ Ctrl+Z 元に戻す・Ctrl+Y やり直す ／ Space 再生・停止 ／ Esc 選択解除（余白クリックでも解除）。「🎹 鍵盤で音符入力」がオンのとき、下の鍵盤で選択位置の直後に音を追加できます（同時押しで和音。再生中は挿入されません）。AI作曲タブの「📝 エディタで編集」で生成曲を取り込めます。変更は自動保存され、自由演奏の「参考楽譜」からも参照できます。</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 下部ドック：操作バー＋鍵盤 -->
+  <div class="piano-wrap">
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <label class="field"><span>音色</span><select id="instrument"></select></label>
+        <label class="field"><span>キー（左端の音）</span><select id="tonic"></select></label>
+      </div>
+      <div class="toolbar-group">
+        <div class="octave-ctl">
+          <button class="oct-btn" id="oct-down" aria-label="オクターブ下げ">−</button>
+          <span id="oct-label">オクターブ 4</span>
+          <button class="oct-btn" id="oct-up" aria-label="オクターブ上げ">＋</button>
+        </div>
+        <span class="oct-hint">↑ ↓ キーでも変更</span>
+      </div>
+    </div>
+    <div class="piano" id="piano"></div>
+    <div class="piano-status"><span id="audio-status">クリックまたはキー入力で音声を有効化します</span></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+  <script src="src/music.js"></script>
+  <script src="src/piano.js"></script>
+  <script src="src/visuals.js"></script>
+  <script src="src/curriculum.js"></script>
+  <script src="src/modes.js"></script>
+  <script src="src/neural.js"></script>
+  <script src="src/model.js"></script>
+  <script src="src/compose.js"></script>
+  <script src="src/editor.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>

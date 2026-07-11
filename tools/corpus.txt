@@ -1,0 +1,129 @@
+# ============================================================================
+# corpus.txt — AI作曲モデルの学習データ（コーパス）
+# ============================================================================
+# このファイルに「曲」を追記して tools/train.py を実行すると、
+# 学習済みモデル（../model.js）が作り直されます。データが増えるほど賢くなります。
+#
+# 【書式】1曲 = 3行のブロック（空行 or #行 で区切り）:
+#
+#   # 曲名（任意コメント）
+#   key: C
+#   chords: I V vi IV
+#   melody: C5:1 D5:1 E5:1 G5:1 | B4:1 A4:1 G4:2 | A4:1 C5:1 E5:1 C5:1 | F4:1 A4:1 C5:2
+#
+#  ・key    … メロディを書いた調（主音）。C, G, F, Bb など。コードはローマ数字なので調に依存しません。
+#  ・chords … 1小節1つのコードを空白区切り。ローマ数字（大文字=長/属, 小文字=短, °=dim）。
+#             7thなどは接尾辞で: V7, Imaj7, ii7, vi7, viiø7, IVmaj7 など。
+#             【拍単位で書く場合】1トークン=1拍、保持は「_」（例: I _ _ _ IV _ V _）。
+#             このときトークン数は小節数×4。自動生成コーパス(tools/data/*.corpus)もこの扱いで、
+#             学習時はどちらの書式も内部で保持トークン形式（_）に正規化されます。
+#  ・time   … 拍子（任意、省略時 4/4）。key: の前の行に書く。現状の学習・生成は 4/4 のみ。
+#  ・melody … 小節を「 | 」で区切り、各小節の音を空白区切りで。
+#             音 = 「音名:拍数」。休符 = 「R:拍数」。1小節の拍数合計は 4（4/4拍子）。
+#             音名は C4, F#4, Bb4 のように書けます（オクターブ付き）。
+#
+#  ・chords の個数と melody の小節数は一致させてください。
+#  ・学習時、メロディはトニック相対の音程に正規化されるので、全キーで生成できます。
+#
+#  ヒント: 強拍（1・3拍目）はコードトーンに、弱拍は順次進行にすると自然な旋律になります。
+# ============================================================================
+
+# 王道進行 I–V–vi–IV
+key: C
+chords: I V vi IV
+melody: C5:1 D5:1 E5:1 G5:1 | B4:1 A4:1 G4:2 | A4:1 C5:1 E5:1 C5:1 | F4:1 A4:1 C5:2
+
+# 王道進行（7th）
+key: C
+chords: Imaj7 V7 vi7 IVmaj7
+melody: E5:2 D5:1 C5:1 | D5:1 B4:1 G4:2 | C5:1 A4:1 E5:1 G5:1 | A4:1 C5:1 F5:2
+
+# 小室進行 vi–IV–V–I
+key: C
+chords: vi IV V I
+melody: A4:1 B4:1 C5:2 | A4:1 C5:1 F5:2 | G4:1 B4:1 D5:2 | E5:1 D5:1 C5:2
+
+# カノン進行
+key: C
+chords: I V vi iii IV I IV V
+melody: C5:2 E5:2 | B4:2 D5:2 | A4:2 C5:2 | G4:2 B4:2 | F4:2 A4:2 | E4:2 G4:2 | F4:2 A4:2 | G4:2 D5:2
+
+# 50s進行 I–vi–IV–V
+key: C
+chords: I vi IV V
+melody: C5:1 E5:1 G5:1 E5:1 | A4:1 C5:1 E5:2 | F4:1 A4:1 C5:2 | G4:1 B4:1 D5:2
+
+# ツーファイブワン
+key: C
+chords: ii7 V7 Imaj7 Imaj7
+melody: D5:1 F5:1 A4:2 | G4:1 B4:1 D5:1 F5:1 | E5:2 C5:2 | C5:4
+
+# 基本進行 I–IV–V–I
+key: C
+chords: I IV V I
+melody: C5:1 E5:1 G5:2 | A4:1 F5:1 C5:2 | B4:1 D5:1 G4:2 | C5:4
+
+# 明るい I–iii–IV–V
+key: C
+chords: I iii IV V
+melody: E5:1 G5:1 C5:2 | G4:1 B4:1 E5:2 | A4:1 C5:1 F5:2 | D5:1 B4:1 G4:2
+
+# vi–IV–I–V
+key: C
+chords: vi IV I V
+melody: E5:1 C5:1 A4:2 | F5:1 C5:1 A4:2 | G4:1 E5:1 C5:2 | D5:1 B4:1 G4:2
+
+# 展開する8小節 I V vi iii IV I ii V
+key: C
+chords: I V vi iii IV I ii V
+melody: C5:1 D5:1 E5:1 F5:1 | G5:1 F5:1 D5:1 B4:1 | C5:1 B4:1 A4:2 | G4:1 A4:1 B4:2 | C5:1 A4:1 F5:2 | E5:1 G5:1 C5:2 | D5:1 F5:1 A4:2 | B4:1 D5:1 G4:2
+
+# バラード I–vi–ii–V
+key: C
+chords: I vi ii V
+melody: E5:2 C5:2 | C5:2 A4:2 | D5:2 F5:2 | G4:2 B4:2
+
+# ジャジー Imaj7 vi7 ii7 V7
+key: C
+chords: Imaj7 vi7 ii7 V7
+melody: G5:1 E5:1 C5:2 | E5:1 C5:1 A4:2 | F5:1 D5:1 A4:2 | F5:1 D5:1 B4:1 G4:1
+
+# J-POP IV–V–iii–vi
+key: C
+chords: IV V iii vi
+melody: F5:1 A4:1 C5:2 | G5:1 B4:1 D5:2 | E5:1 G4:1 B4:2 | A4:1 C5:1 E5:2
+
+# 8分音符でリッチに I V vi IV
+key: C
+chords: I V vi IV
+melody: C5:0.5 E5:0.5 G5:1 E5:1 C5:1 | D5:0.5 B4:0.5 G4:1 B4:1 D5:1 | E5:0.5 C5:0.5 A4:1 C5:1 E5:1 | F5:0.5 C5:0.5 A4:1 F4:1 A4:1
+
+# 上行 I–V–iii–IV
+key: C
+chords: I V iii IV
+melody: G4:1 C5:1 E5:2 | B4:1 D5:1 G5:2 | E5:1 G5:1 B4:2 | A4:1 F5:1 C5:2
+
+# 憂い vi–iii–IV–I
+key: C
+chords: vi iii IV I
+melody: A4:1 E5:1 C5:2 | B4:1 E5:1 G4:2 | C5:1 F5:1 A4:2 | E5:1 C5:1 G4:2
+
+# ジャズ・ターンアラウンド Imaj7 IVmaj7 ii7 V7
+key: C
+chords: Imaj7 IVmaj7 ii7 V7
+melody: C5:1 E5:1 G5:1 B5:1 | A4:1 C5:1 F5:1 E5:1 | D5:1 F5:1 A4:1 C5:1 | G4:1 B4:1 D5:1 F5:1
+
+# 間（休符）入り I V vi IV
+key: C
+chords: I V vi IV
+melody: C5:1 R:1 E5:1 G5:1 | B4:1 R:1 D5:1 G4:1 | A4:1 R:1 C5:1 E5:1 | F4:1 R:1 A4:1 C5:1
+
+# 8小節ポップ I V vi IV I V IV V
+key: C
+chords: I V vi IV I V IV V
+melody: E5:1 G5:1 C5:1 E5:1 | D5:1 B4:1 G4:1 D5:1 | C5:1 A4:1 E5:1 C5:1 | A4:1 F5:1 C5:1 A4:1 | G5:1 E5:1 C5:1 G4:1 | B4:1 D5:1 G5:1 B4:1 | A4:1 C5:1 F5:1 A4:1 | G4:1 B4:1 D5:2
+
+# ゆったり I–vi–IV–V
+key: C
+chords: I vi IV V
+melody: C5:3 E5:1 | A4:3 C5:1 | F4:3 A4:1 | G4:3 B4:1
