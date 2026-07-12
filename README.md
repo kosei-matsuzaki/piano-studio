@@ -3,6 +3,8 @@
 PCのキーボードでピアノを演奏でき、音楽理論を学べて、AIが作曲までするWebアプリです。
 ビルド不要・インストール不要。`index.html` をブラウザで開くだけで動きます。
 
+**🚀 デモ（ブラウザでそのまま試せます）: https://kosei-matsuzaki.github.io/piano-studio/**
+
 **作品概要・スクリーンショット・技術解説は [docs/PORTFOLIO.md](docs/PORTFOLIO.md) を参照してください。**
 
 ## 起動方法

@@ -4,6 +4,7 @@
 
 | 項目 | 内容 |
 |------|------|
+| **デモ** | **https://kosei-matsuzaki.github.io/piano-studio/** （インストール不要・ブラウザでそのまま動作） |
 | 形態 | Webアプリ（HTML/CSS/JavaScript、**ビルド不要・`index.html` を開くだけ**） |
 | 主要機能 | 自由演奏／音楽理論カリキュラム（全52パート）／AI作曲（自作Transformer）／楽譜エディタ |
 | 規模 | アプリ＋学習パイプラインで約9,400行（curriculum.js等のデータ含む）、学習済みモデル約160万パラメータ |
