@@ -74,6 +74,7 @@ def main():
     ap.add_argument("--epochs", type=int, default=80)
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--lr", type=float, default=3e-4)
+    ap.add_argument("--genre-cap", type=int, default=2000, help="ジャンルごとの進行数上限(0=無制限)")
     args = ap.parse_args()
     try:
         sys.stdout.reconfigure(line_buffering=True)
@@ -81,9 +82,25 @@ def main():
         pass
 
     songs = T.load_all_corpora()
-    seqs = [s["chords"] for s in songs if s.get("chords") and not s.get("melody")]
-    seqs = [s for s in seqs if len(s) + 2 <= MAXPOS]
-    print(f"フル曲進行 {len(seqs)} 本で学習（Transformer）", flush=True)
+    pool = [(s["chords"], s.get("genre", "pop")) for s in songs
+            if s.get("chords") and not s.get("melody") and len(s["chords"]) + 2 <= MAXPOS]
+    # ジャンル別上限: songbook(Wikifonia 4千曲)が支配すると和声リズムが洋楽スタンダード様式
+    # (1コード=1小節・拍間変化が減る)に寄るため、上限をかけて pop 系の比重を保つ。
+    from collections import Counter, defaultdict
+    if args.genre_cap:
+        rng = np.random.RandomState(0)
+        by_g = defaultdict(list)
+        for i, (_, g) in enumerate(pool):
+            by_g[g].append(i)
+        keep = []
+        for g, idxs in by_g.items():
+            if len(idxs) > args.genre_cap:
+                idxs = [idxs[k] for k in rng.permutation(len(idxs))[:args.genre_cap]]
+            keep += idxs
+        keep.sort()
+        pool = [pool[i] for i in keep]
+    seqs = [c for c, _ in pool]
+    print(f"フル曲進行 {len(seqs)} 本で学習（Transformer）ジャンル別: {dict(Counter(g for _, g in pool))}", flush=True)
     cvocab, cidx = T.make_vocab([c for s in seqs for c in s], [T.BOS, T.EOS])
     print(f"コード語彙: {len(cvocab)}  dim={args.dim} layers={args.layers} heads={args.heads}", flush=True)
 

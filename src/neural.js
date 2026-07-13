@@ -421,7 +421,7 @@
           embG: mel.emb_g || null,
           gIdx: mel.genreVocab ? Object.fromEntries(mel.genreVocab.map((t, i) => [t, i])) : null,
           layers: mel.layers, lnfG: mel.lnf_g, lnfB: mel.lnf_b, Wout: mel.Wout, bout: mel.bout,
-          restIdx: [], pitchIdx: {},                   // 休符トークン / 音程別トークン（生成時バイアス用）
+          restIdx: [], pitchIdx: {}, dur8Idx: [],      // 休符/音程別/8分音符トークン（生成時バイアス用）
         };
         mel.outVocab.forEach((t, i) => {
           if (t[0] === "R") this.melTF.restIdx.push(i);
@@ -429,6 +429,7 @@
             const off = parseInt(t, 10);
             if (!isNaN(off)) (this.melTF.pitchIdx[off] = this.melTF.pitchIdx[off] || []).push(i);
           }
+          if (t.endsWith(":0.5")) this.melTF.dur8Idx.push(i);
         });
         this.mel = null;
       } else {
@@ -746,8 +747,10 @@
       // 曲単位の偏り対策（Transformerは拾った様式に自己強化でロックしやすい）:
       //  ・休符予算: 休符がトークンの REST_TARGET を超えている間は休符にペナルティ（スカスカな曲を防ぐ）
       //  ・同音連打ペナルティ: 同じ音程が4回以上続いたら、その音程に漸増ペナルティ（一本調子を防ぐ）
-      const REST_TARGET = 0.15;
-      let restCount = 0, tokCount = 0, samePitchRun = 0, lastOff = null;
+      //  ・音価予算: 8分音符が DUR8_TARGET を超えている間は8分にペナルティ
+      //    （データの8分は37%だが、リズムロックで8分だらけ(70%+)の曲になるのを防ぐ）
+      const REST_TARGET = 0.15, DUR8_TARGET = 0.5;
+      let restCount = 0, tokCount = 0, samePitchRun = 0, lastOff = null, dur8Count = 0;
       for (let bi = 0; bi < nbars; bi++) {
         const bc = beatChords.slice(bi * beatsPerBar, bi * beatsPerBar + beatsPerBar);
         let remaining = beatsPerBar, cur = 0;
@@ -764,6 +767,8 @@
           if (restCount > tokCount * REST_TARGET + 2) for (const ri of m.restIdx) y[ri] -= 2.0;
           if (samePitchRun >= 3 && lastOff != null)
             for (const pi of (m.pitchIdx[lastOff] || [])) y[pi] -= 1.5 * (samePitchRun - 2);
+          if (tokCount >= 12 && dur8Count > tokCount * DUR8_TARGET)
+            for (const di of m.dur8Idx) y[di] -= 25 * (dur8Count / tokCount - DUR8_TARGET);
           const idx = sample(y, temperature, banned);
           prev = idx;
           const tok = m.vocab[idx];
@@ -772,6 +777,7 @@
           if (!(dur > 0)) dur = 0.5;
           if (dur > remaining + 1e-6) dur = remaining;     // 小節をはみ出す音は詰める
           tokCount++;
+          if (parts[1] === "0.5") dur8Count++;
           if (parts[0] === "R") {
             restCount++;
             notes.push({ rest: true, beats: dur });

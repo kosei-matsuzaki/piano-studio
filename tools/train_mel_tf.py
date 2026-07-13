@@ -73,6 +73,9 @@ def main():
     ap.add_argument("--epochs", type=int, default=40)
     ap.add_argument("--batch", type=int, default=96)
     ap.add_argument("--lr", type=float, default=3e-4)
+    ap.add_argument("--genre-cap", type=int, default=0, help="ジャンルごとの系列数上限(0=無制限)")
+    ap.add_argument("--songbook-cap", type=int, default=0,
+                    help="songbook(Wikifonia)の上限(0=除外)。ジャンル埋め込みでは分離しきれず、混ぜるとpopのリズム分布が8分に寄るため既定で除外")
     args = ap.parse_args()
     try:
         sys.stdout.reconfigure(line_buffering=True)
@@ -83,7 +86,22 @@ def main():
     _, mel_seqs, _, mel_gen = T.build_dataset(songs)
     keep = [i for i, s in enumerate(mel_seqs) if len(s) + 2 <= MAXPOS]
     mel_seqs = [mel_seqs[i] for i in keep]; mel_gen = [mel_gen[i] for i in keep]
-    from collections import Counter
+    # ジャンル別上限: 多数派(songbook=Wikifonia 1.7万)が支配すると pop の様式
+    # (モチーフ反復・リズム分布)が薄まるため、ジャンルごとに上限をかけて均衡化する。
+    from collections import Counter, defaultdict
+    rng = np.random.RandomState(0)
+    by_g = defaultdict(list)
+    for i, g in enumerate(mel_gen):
+        by_g[g].append(i)
+    keep2 = []
+    for g, idxs in by_g.items():
+        if g == "songbook":
+            idxs = [] if not args.songbook_cap else                 [idxs[k] for k in rng.permutation(len(idxs))[:args.songbook_cap]]
+        elif args.genre_cap and len(idxs) > args.genre_cap:
+            idxs = [idxs[k] for k in rng.permutation(len(idxs))[:args.genre_cap]]
+        keep2 += idxs
+    keep2.sort()
+    mel_seqs = [mel_seqs[i] for i in keep2]; mel_gen = [mel_gen[i] for i in keep2]
     print(f"メロディ系列 {len(mel_seqs)} 本で学習（Transformer）ジャンル別: {dict(Counter(mel_gen))}", flush=True)
     mvocab, midx = T.make_vocab([m for s in mel_seqs for (m, _) in s], [T.BOS, T.EOS])
     chvocab, chidx = T.make_vocab([c for s in mel_seqs for (_, c) in s], [T.UNK])
